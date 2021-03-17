@@ -1,4 +1,5 @@
 import { AxiosStatic } from "axios"
+import { InternalError } from "@src/util/errors/internal-error"
 
 export interface StormGlassPointSource {
   [key: string]: number
@@ -28,6 +29,22 @@ export interface ForecastPoint {
   windSpeed: number
 }
 
+export class ClientRequestError extends InternalError {
+  constructor(message: string) {
+    const internalMessage = 'Unexpected error when trying to communicate to StormGlass'
+
+    super(`${internalMessage}: ${message}`)
+  }
+}
+
+export class StormGlassResponseError extends InternalError {
+  constructor(message: string) {
+    const internalMessage = 'Unexpected error returned by the StormGlass service'
+    
+    super(`${internalMessage}: ${message}`)
+  }
+}
+
 export class StormGlass {
 
   readonly baseUrl = 'https://api.stormglass.io/v2/weather/point'
@@ -39,15 +56,21 @@ export class StormGlass {
   constructor(protected request: AxiosStatic, protected apiKey: string) {}
 
   public async fetchPoints(lat: number, lng: number): Promise<ForecastPoint[]> {
-    
-    const response = await this.request.get<StormGlassForecastResponse>(`
-      ${this.baseUrl}?params=${this.stormGlassAPIParams}&source=${this.stormGlassAPISource}&end=1592113802&lat=${lat}&lng=${lng}
-    `, {
-      headers: { Authorization: this.apiKey }
-    })
-
-
-    return this.normalizeResponse(response.data)
+    try {
+      const response = await this.request.get<StormGlassForecastResponse>(`
+        ${this.baseUrl}?params=${this.stormGlassAPIParams}&source=${this.stormGlassAPISource}&end=1592113802&lat=${lat}&lng=${lng}
+      `, {
+        headers: { Authorization: this.apiKey }
+      })
+  
+      return this.normalizeResponse(response.data)
+      
+    } catch (error) {
+      if (error.response && error.response.status) {
+        throw new StormGlassResponseError(`Error: ${JSON.stringify(error.response.data)} Code: ${error.response.status}`)
+      }
+      throw new ClientRequestError(error.message)
+    }
   }
 
   private normalizeResponse(points: StormGlassForecastResponse): ForecastPoint[] {
