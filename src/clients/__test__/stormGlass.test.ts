@@ -1,11 +1,8 @@
 import axios from 'axios'
-import dotenv from 'dotenv'
 
 import { StormGlass } from '@src/clients/stormGlass'
 import stormGlassWeather3HoursFixture from '@test/fixtures/stormglass_weather_3_hours.json'
 import stormGlassNormalizedWeather3HoursFixture from '@test/fixtures/stormglass_normalized_response_3_hours.json'
-
-dotenv.config()
 
 jest.mock('axios')
 
@@ -18,7 +15,7 @@ describe('StormGlass client', () => {
 
     mockedAxios.get.mockResolvedValue({data: stormGlassWeather3HoursFixture})
 
-    const stormGlass = new StormGlass(mockedAxios, process.env.STORM_GLASS_API_KEY)
+    const stormGlass = new StormGlass(mockedAxios)
     const response = await stormGlass.fetchPoints(lat, lng)
 
     expect(response).toEqual(stormGlassNormalizedWeather3HoursFixture)
@@ -41,7 +38,7 @@ describe('StormGlass client', () => {
 
     mockedAxios.get.mockResolvedValue({data: incompleteResponse})
 
-    const stormGlass = new StormGlass(mockedAxios, process.env.STORM_GLASS_API_KEY)
+    const stormGlass = new StormGlass(mockedAxios)
     const response = await stormGlass.fetchPoints(lat, lng)
 
     expect(response).toEqual([])
@@ -53,7 +50,7 @@ describe('StormGlass client', () => {
 
     mockedAxios.get.mockRejectedValue({message: 'Network Error'})
 
-    const stormGlass = new StormGlass(mockedAxios, process.env.STORM_GLASS_API_KEY)
+    const stormGlass = new StormGlass(mockedAxios)
 
     await expect(stormGlass.fetchPoints(lat, lng)).rejects.toThrow(
       'Unexpected error when trying to communicate to StormGlass: Network Error'
@@ -72,7 +69,7 @@ describe('StormGlass client', () => {
       }
     })
 
-    const stormGlass = new StormGlass(mockedAxios, process.env.STORM_GLASS_API_KEY)
+    const stormGlass = new StormGlass(mockedAxios)
 
     await expect(stormGlass.fetchPoints(lat, lng)).rejects.toThrow(
       'Unexpected error returned by the StormGlass service: Error: {"errors":["Rate limit reached"]} Code: 429'
