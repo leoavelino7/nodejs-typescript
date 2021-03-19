@@ -4,9 +4,16 @@ import { Application } from 'express';
 import { ForecastController } from './controllers/forecast';
 import './util/module-alias';
 
+import * as database from '@src/database'
 export class SetupServer extends Server {
   constructor(private port = 3000) {
     super();
+  }
+  
+  public async init(): Promise<void> {
+    this.setupExpress();
+    this.setupController();
+    await this.databaseSetup()
   }
 
   private setupExpress(): void {
@@ -19,12 +26,16 @@ export class SetupServer extends Server {
     this.addControllers([forecastController]);
   }
 
+  private async databaseSetup(): Promise<void> {
+    await database.connect()
+  }
+
   public getApp(): Application {
     return this.app;
   }
 
-  public init(): void {
-    this.setupExpress();
-    this.setupController();
+  public async close(): Promise<void> {
+    await database.close()
   }
+
 }
